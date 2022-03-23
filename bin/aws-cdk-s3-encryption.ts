@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
-import { AwsCdkS3EncryptionStack } from '../lib/aws-cdk-s3-encryption-stack';
+import { enableS3Encryption } from '../lib/aws-cdk-s3-encryption-stack';
 
 const app = new cdk.App();
-new AwsCdkS3EncryptionStack(app, 'AwsCdkS3EncryptionStack', {
+new enableS3Encryption(app, 'AwsCdkS3EncryptionStack', {
   /* If you don't specify 'env', this stack will be environment-agnostic.
    * Account/Region-dependent features and context lookups will not work,
    * but a single synthesized template can be deployed anywhere. */

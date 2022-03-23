@@ -21,7 +21,7 @@ def on_event(event, context):
             return on_update(event)
         raise Exception(f"Invalid request type: {event['RequestType']}")
     if 'detail' in event:
-        if event['detail']['eventName'].lower() == 'createmanagedaccount':
+        if event['detail']['eventName'].lower() == 'CreateBucket':
             print("event found")
             return bucket_create(event)
     print("No Event")
@@ -34,30 +34,52 @@ def bucket_create(event):
     s3client = boto3.client('s3')
     
 
-    logger.info("Getting Default Security Group")
+    logger.info("Enabling Default Encryption for New Bucket")
 
-    response = s3client.get_bucket_logging(
-            Bucket=bucket_name
-        )
-    if 'LoggingEnabled' in response:
-        print("Logging Enabled")
+    
+    response = s3client.get_bucket_encryption(
+        Bucket=bucket_name
+    )
+    if 'ApplyServerSideEncryptionByDefault' in response:
+        print("Default Encryption Already Enabled")
     else:
-        if bucket_name != os.environ['LOGGING_S3_BUCKET']:
-            print(f"Enabling Logging for {bucket_name}")
+        if os.environ['KMS_ENCRYPTION_KEY'] != '':
+            print(f"Enabling Encryption for {bucket_name} with CMK")
             try:
-                response = s3client.put_bucket_logging(
+                response = s3client.put_bucket_encryption(
                     Bucket=bucket_name,
-                    BucketLoggingStatus={
-                        'LoggingEnabled': {
-                            'TargetBucket': os.environ['LOGGING_S3_BUCKET'],
-                            'TargetPrefix': f'{bucket_name}/',
-                        }
+                    ServerSideEncryptionConfiguration={
+                        'Rules': [{
+                            'ApplyServerSideEncryptionByDefault': {
+                                'SSEAlgorithm': 'aws:kms',
+                                'KMSMasterKeyID': os.environ['KMS_ENCRYPTION_KEY']
+                            },
+                            'BucketKeyEnabled': True
+                        }]
                     }
                 )
             except Exception as e:
                 logger.exception(f"failed to to update {bucket_name} - " + str(e)) 
 
-                
+                    
+    
+        else:
+            print(f"Enabling Default Encryption for {bucket_name} with AWS SSE-S3")
+            try:
+                response = s3client.put_bucket_encryption(
+                    Bucket=bucket_name,
+                    ServerSideEncryptionConfiguration={
+                        'Rules': [{
+                            'ApplyServerSideEncryptionByDefault': {
+                                'SSEAlgorithm': 'AES256'
+                            }
+                        }]
+                    }
+                )
+            except Exception as e:
+                logger.exception(f"failed to to update {bucket_name} - " + str(e)) 
+
+                    
 
    
    

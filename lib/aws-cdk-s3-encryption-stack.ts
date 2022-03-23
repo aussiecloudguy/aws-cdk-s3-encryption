@@ -56,7 +56,9 @@ export class enableS3EncryptionStack extends Stack {
         's3:PutBucketLogging',
         's3:GetBucketLogging',
         's3:ListBucketVersions',
-        's3:ListBucket'
+        's3:ListBucket',
+        's3:PutEncryptionConfiguration',
+        's3:GetEncryptionConfiguration'
       ],
 
       resources: [
@@ -66,9 +68,24 @@ export class enableS3EncryptionStack extends Stack {
       ],
     });
 
+    // 👇 create a policy statement
+   const KMSAccessPolicy2 = new iam.PolicyStatement({
+    actions: [
+      'kms:CreateKey',
+      'kms:CreateKeyAlias'
+
+      
+    ],
+
+    resources: [
+      '*'
+
+    ],
+  });
     
   
    bucketFunction.addToRolePolicy(AccessPolicy);
+   bucketFunction.addToRolePolicy(KMSAccessPolicy2);
 
    // 👇 create a policy statement
    const AccessPolicy2 = new iam.PolicyStatement({
@@ -85,7 +102,7 @@ export class enableS3EncryptionStack extends Stack {
   });
 
     bucketFunction.addToRolePolicy(AccessPolicy2);
-    const customresourceProvider = new custom_resource.Provider(this, 'EBSLambaCustomResource', {
+    const customresourceProvider = new custom_resource.Provider(this, 's3EncryptionLambaCustomResource', {
       onEventHandler: bucketFunction,
       //isCompleteHandler: isComplete,        // optional async "waiter"
       logRetention: logs.RetentionDays.ONE_DAY   // default is INFINITE
@@ -93,62 +110,25 @@ export class enableS3EncryptionStack extends Stack {
     });
   
   
-  new CustomResource(this, 'Invokes3logging', { serviceToken: customresourceProvider.serviceToken });
+  new CustomResource(this, 'Invokes3encryptionfunction', { serviceToken: customresourceProvider.serviceToken });
   
       
    
   
   
       
-      const runrule=new events.Rule(this, "enableaccesslogsfornewbuckets",{
-        eventPattern: {
-          source: ["aws.s3"],
-          detailType: ["AWS Service Event via CloudTrail"],
-          detail: {
-            "eventName": ["CreateBucket"]
-          }
-        }
-      });
-  
-      runrule.addTarget(new targets.LambdaFunction(bucketFunction));
-  
-      const schedulerule=new events.Rule(this, "checkbucketsonschedule",{
-        schedule: events.Schedule.cron({ minute: '0', hour: '4' }),
-        
-      });
-  
-      schedulerule.addTarget(new targets.LambdaFunction(bucketFunction));
-  
-      /*const lambdaErrors = bucketFunction.metricErrors({
-        period: Duration.seconds(300),
-      });
-      const lambdaDuration = bucketFunction.metricDuration({
-        period: Duration.seconds(300),
-      });
-  */
-      /*
-      const existingSnsTopic = sns.Topic.fromTopicArn(this, "existing topic", `arn:aws:sns:${Stack.of(this).region}:${Stack.of(this).account}:datacom-cloudwatch-alarms-mira-resources`);
-  
-      const errorAlarm = lambdaErrors.createAlarm(this, "Enable-EBS-Default-Encryption-error-alarm", {
-        alarmName: `security-hub-Enable-EBS-Default-Encryption-errors-${Stack.of(this).region}:${Stack.of(this).account}`,
-        threshold: 0,
-        comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-        evaluationPeriods: 1,
-        actionsEnabled: true
-  
-      });
-      errorAlarm.addAlarmAction(new actions.SnsAction(existingSnsTopic));
-      
-      const durationAlarm = lambdaDuration.createAlarm(this, "Enable-EBS-Default-Encryption-duration-alarm", {
-        alarmName: `security-hub-Enable-EBS-Default-Encryption-duration-${Stack.of(this).region}:${Stack.of(this).account}`,
-        threshold: 30000,
-        comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-        evaluationPeriods: 1,
-        actionsEnabled: true
-  
-      });
-      durationAlarm.addAlarmAction(new actions.SnsAction(existingSnsTopic));
-      */
+  const runrule=new events.Rule(this, "enables3encryptionfornewbuckets",{
+    eventPattern: {
+      source: ["aws.s3"],
+      detailType: ["AWS Service Event via CloudTrail"],
+      detail: {
+        "eventName": ["CreateBucket"]
+      }
+    }
+  });
 
+  runrule.addTarget(new targets.LambdaFunction(bucketFunction));
+  
+      
   }
 }
