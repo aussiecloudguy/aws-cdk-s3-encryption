@@ -1,6 +1,6 @@
 {
   "name": "aws-cdk-s3-encryption",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "bin": {
     "aws-cdk-s3-encryption": "bin/aws-cdk-s3-encryption.js"
   },
@@ -17,10 +17,10 @@
     "ts-jest": "^26.2.0",
     "aws-cdk": "2.13.0",
     "ts-node": "^9.0.0",
-    "typescript": "~3.9.7"
+    "typescript": "~4.3.5"
   },
   "dependencies": {
-    "aws-cdk-lib": "2.13.0",
+    "aws-cdk-lib": "2.17.0",
     "constructs": "^10.0.0",
     "source-map-support": "^0.5.16"
   }
